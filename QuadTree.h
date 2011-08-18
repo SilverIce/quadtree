@@ -134,12 +134,14 @@ public:
        // uint32 nodeId;
     };
 
-    explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : depth(Depth)
+    explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : depth(Depth), nodes(0)
     {
         uint32 nodesCount = NodesAmount(depth);
         nodes = new Node[nodesCount];
         initNodes(center, sideSize);
     }
+
+    ~QuadTree() { delete[] nodes;}
 
     void initNodes(const Point& center, uint32 sideSize)
     {
@@ -152,7 +154,7 @@ public:
                 me->div.xDiv = myCenter.x;
                 me->div.yDiv = myCenter.y;
 
-                if (myDepth == lastDepth)
+                if (myDepth == lastDepth)   // last node has no childs
                     return;
 
                 Node * child_table = my_table + NodesPerLevelAmount(myDepth);
@@ -229,7 +231,7 @@ public:
 
                 visitor(me, my_adress);
 
-                if (myDepth == lastDepth)
+                if (myDepth == lastDepth)   // last node has no childs
                     return;
 
                 SpaceDivision::IntersectionResult res = me->div.intersection(p);

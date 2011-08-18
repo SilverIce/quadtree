@@ -16,8 +16,8 @@ int main()
     Point center = {MAP_SIZE/2, MAP_SIZE/2};
     QuadTree tree(4, center, MAP_SIZE);
 
-    Circle c = {MAP_SIZE/2, MAP_SIZE/2, 100};
-    tree.intersectRecursive(AABox2d::create(c), TreeVisitor());
+    //Circle c = {MAP_SIZE/2, MAP_SIZE/2, 100};
+    //tree.intersectRecursive(AABox2d::create(c), TreeVisitor());
 
     return 0;
 }
