@@ -1,4 +1,5 @@
 #pragma once
+#include <memory.h>
 
 typedef unsigned int uint32;
 typedef unsigned long uint64;
@@ -111,19 +112,19 @@ class QuadTree
     // calculates total amount of nodes for given tree depth
     static uint32 NodesAmount(uint32 depth)
     {
-        return ((2 << (2*depth)) - 1) / 3;
+        return ((2 << (2*depth+2)) - 1) / 3;
     }
 
     // calculates amount of nodes for given level(depth)
     static uint32 NodesPerLevelAmount(uint32 depth)
     {
-        return (2 << (2*depth - 2));
+        return (2 << (2*depth));
     }
 
     // calculates amount of nodes for level(depth)
     static uint32 NodesSidePerLevelAmount(uint32 depth)
     {
-        return (2 << (depth - 1));
+        return (2 << depth);
     }
 
 public:
@@ -132,6 +133,10 @@ public:
     {
         SpaceDivision div;
        // uint32 nodeId;
+    };
+
+    enum{
+        DBG_WORD = uint32(-1),
     };
 
     explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : depth(Depth), nodes(0)
@@ -151,6 +156,11 @@ public:
             {
                 Node * me = my_table + my_adress;
 
+                if ( (uint32&)(*me) != DBG_WORD )
+                {
+                    return;
+                }
+
                 me->div.xDiv = myCenter.x;
                 me->div.yDiv = myCenter.y;
 
@@ -160,7 +170,6 @@ public:
                 Node * child_table = my_table + NodesPerLevelAmount(myDepth);
                 uint32 child_depth = myDepth + 1;
                 uint32 child_adress = my_adress * 4;
-                uint32 child_levelSideSize = NodesSidePerLevelAmount(child_depth);
 
                 Point child_center(myCenter);
                 uint32 child_SideSize = mySideSize / 2;
@@ -168,37 +177,34 @@ public:
 
                 child_center.x -= offset;
                 child_center.y += offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress); // LeftUpper
+                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // LeftUpper
 
                 child_center = myCenter;
                 child_center.x += offset;
                 child_center.y += offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress+1); // RightUpper
+                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightUpper
 
                 child_center = myCenter;
                 child_center.x -= offset;
                 child_center.y -= offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress+child_levelSideSize); // LeftLower
+                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // LeftLower
 
                 child_center = myCenter;
                 child_center.x -= offset;
                 child_center.y += offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress+child_levelSideSize+1); // RightLower
+                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightLower
             }
         };
-        TT::Visit(nodes, center, sideSize, depth, 1, 0);
+        memset(nodes, DBG_WORD, NodesAmount(depth) * sizeof Node);
+        TT::Visit(nodes, center, sideSize, depth, 0, 0);
     }
 
     // Not recursive. Hard to implement
-    void intersect(const AABox2d& p)
+    void intersect(const AABox2d& /*p*/) const
     {
-        uint32 I = 1;
+        /*uint32 I = 1;
         uint32 stack[0x100];
         uint32 stackItr = 0;
-
-        /*
-            посетить рут, записать 2(например) чайлда
-        */
 
         {
             uint32 levelSize = NodesPerLevelAmount(I);
@@ -215,19 +221,22 @@ public:
             if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
                 stack[stackItr++] = ++I;
 
-
             ++I;
-            ;
-        }
+        }*/
     }
 
-    template<class T> void intersectRecursive(const AABox2d& p, T& visitor)
+    template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const
     {
         struct TT 
         {
-            static void Visit(Node * my_table, const AABox2d& p, T& visitor, uint32 lastDepth, uint32 myDepth = 1, uint32 my_adress = 0)
+            static void Visit(const Node * my_table, const AABox2d& p, T& visitor, uint32 lastDepth, uint32 myDepth, uint32 my_adress)
             {
-                Node * me = my_table + my_adress;
+                const Node * me = my_table + my_adress;
+
+                if ( (uint32&)(*me) == DBG_WORD )
+                {
+                    return;
+                }
 
                 visitor(me, my_adress);
 
@@ -236,24 +245,22 @@ public:
 
                 SpaceDivision::IntersectionResult res = me->div.intersection(p);
 
-                Node * child_table = my_table + NodesPerLevelAmount(myDepth);
+                const Node * child_table = my_table + NodesPerLevelAmount(myDepth);
                 uint32 child_depth = myDepth + 1;
                 uint32 child_adress = my_adress * 4;
 
-                uint32 child_levelSideSize = NodesSidePerLevelAmount(child_depth);
-
                 if ((res & SpaceDivision::LeftUpper) == SpaceDivision::LeftUpper)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress);
+                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
                 if ((res & SpaceDivision::RightUpper) == SpaceDivision::RightUpper)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress+1);
+                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
                 if ((res & SpaceDivision::LeftLower) == SpaceDivision::LeftLower)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress+child_levelSideSize);
+                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
                 if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress+child_levelSideSize+1);
+                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
             }
         };
 
-        TT::Visit(nodes, p, visitor, depth);
+        TT::Visit(nodes, p, visitor, depth, 0, 0);
     }
 
     Node * nodes;
