@@ -191,8 +191,8 @@ public:
                 Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // LeftLower
 
                 child_center = myCenter;
-                child_center.x -= offset;
-                child_center.y += offset;
+                child_center.x += offset;
+                child_center.y -= offset;
                 Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightLower
             }
         };
