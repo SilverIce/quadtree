@@ -23,7 +23,6 @@ void QuadTree::debugSelf()
     uint32 depth = 10;
     check(  QuadTree::NodesPerLevelAmount(depth) == (uint32)pow(2.f, (int)(2*depth)) );
     check(  QuadTree::NodesAmount(depth) == (uint32) ((pow(2.f,(int)(2*depth+2))) -1u) / 3u );
-    check(  QuadTree::NodesSidePerLevelAmount(depth) == (uint32)pow(2.f, (int)depth) );
 
     Node * end = this->nodes + NodesAmount(this->m_depth);
     for (Node * i = this->nodes; i != end; ++i)

@@ -68,7 +68,7 @@ struct SpaceDivision
         Lower       = 0x4,
         Upper       = 0x8,
 
-        LeftUpper   = Left|Upper,   //3
+        LeftUpper   = Left|Upper,
         RightUpper  = Right|Upper,
         LeftLower   = Left|Lower,
         RightLower  = Right|Lower,
@@ -121,12 +121,6 @@ public:
     static uint32 NodesPerLevelAmount(uint32 depth)
     {
         return (1 << (2*depth));
-    }
-
-    // calculates amount of nodes for level(depth)
-    static uint32 NodesSidePerLevelAmount(uint32 depth)
-    {
-        return (1 << depth);
     }
 
     typedef SpaceDivision Node;
@@ -274,9 +268,7 @@ void QuadTree::initNodes(const Point& center, uint32 sideSize)
             Node * me = it.current();
 
             if ( (uint32&)(*me) != DBG_WORD )
-            {
                 return;
-            }
 
             me->xDiv = myCenter.x;
             me->yDiv = myCenter.y;
