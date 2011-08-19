@@ -98,9 +98,9 @@ struct SpaceDivision
             result |= (Left|Right);
 
         if (yDiv < p.lo.y)
-            result |= Lower;
-        else if (yDiv > p.hi.y)
             result |= Upper;
+        else if (yDiv > p.hi.y)
+            result |= Lower;
         else
             result |= (Lower|Upper);
         return (IntersectionResult)result;
