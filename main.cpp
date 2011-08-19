@@ -48,6 +48,8 @@ int main()
     TreeVisitor visitor = {&tree};
     tree.intersectRecursive(AABox2d::create(c), visitor);
 
+    QuadIterator it = tree.deepestContaining(AABox2d::create(c));
+
     _getch();
     return 0;
 }

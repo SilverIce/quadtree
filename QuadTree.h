@@ -181,6 +181,8 @@ public:
 
     template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const;
 
+    struct QuadIterator deepestContaining(const AABox2d& p) const;
+
     Node * nodes;
     uint32 m_depth;
 };
@@ -221,6 +223,11 @@ struct QuadIterator
         QuadIterator it = *this;
         it.my_adress += offset;
         return it;
+    }
+
+    void moveTo(ChildOffset offset)
+    {
+        my_adress += offset;
     }
 
     QuadTree::Node* current() const { return my_table + my_adress;}
@@ -303,4 +310,40 @@ void QuadTree::initNodes(const Point& center, uint32 sideSize)
     };
     memset(nodes, DBG_WORD, NodesAmount(m_depth) * sizeof Node);
     TT::Visit(QuadIterator::create(this), center, sideSize);
+}
+
+QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
+{
+    QuadIterator it(QuadIterator::create(this));
+
+    while(true)
+    {
+        Node * me = it.current();
+
+        if ( (uint32&)(*me) == DBG_WORD )
+            break;
+
+        if (!it.moveNext())   // last node has no childs
+            break;
+
+        SpaceDivision::IntersectionResult res = me->intersection(p);
+        switch (res)
+        {
+        case SpaceDivision::LeftUpper:
+            it.moveTo(LeftUpper);
+            continue;
+        case SpaceDivision::RightUpper:
+            it.moveTo(RightUpper);
+            continue;
+        case SpaceDivision::LeftLower:
+            it.moveTo(LeftLower);
+            continue;
+        case SpaceDivision::RightLower:
+            it.moveTo(RightLower);
+            continue;
+        default:
+            break;
+        }
+    }
+    return it;
 }
