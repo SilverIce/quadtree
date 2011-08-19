@@ -151,56 +151,7 @@ public:
 
     void debugSelf();
 
-    void initNodes(const Point& center, uint32 sideSize)
-    {
-        struct TT 
-        {
-            static void Visit(Node * my_table, Point myCenter, uint32 mySideSize, uint32 lastDepth, uint32 myDepth, uint32 my_adress)
-            {
-                Node * me = my_table + my_adress;
-
-                if ( (uint32&)(*me) != DBG_WORD )
-                {
-                    return;
-                }
-
-                me->xDiv = myCenter.x;
-                me->yDiv = myCenter.y;
-
-                if (myDepth == lastDepth)   // last node has no childs
-                    return;
-
-                Node * child_table = my_table + NodesPerLevelAmount(myDepth);
-                uint32 child_depth = myDepth + 1;
-                uint32 child_adress = my_adress * 4;
-
-                Point child_center(myCenter);
-                uint32 child_SideSize = mySideSize / 2;
-                uint32 offset = mySideSize / 4;
-
-                child_center.x -= offset;
-                child_center.y += offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // LeftUpper
-
-                child_center = myCenter;
-                child_center.x += offset;
-                child_center.y += offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightUpper
-
-                child_center = myCenter;
-                child_center.x -= offset;
-                child_center.y -= offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // LeftLower
-
-                child_center = myCenter;
-                child_center.x += offset;
-                child_center.y -= offset;
-                Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightLower
-            }
-        };
-        memset(nodes, DBG_WORD, NodesAmount(m_depth) * sizeof Node);
-        TT::Visit(nodes, center, sideSize, m_depth, 0, 0);
-    }
+    void initNodes(const Point& center, uint32 sideSize);
 
     // Not recursive. Hard to implement
     void intersect(const AABox2d& /*p*/) const
@@ -228,43 +179,128 @@ public:
         }*/
     }
 
-    template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const
-    {
-        struct TT {
-            static void Visit(const Node * my_table, const AABox2d& p, T& visitor, uint32 lastDepth, uint32 myDepth, uint32 my_adress)
-            {
-                const Node * me = my_table + my_adress;
-
-                if ( (uint32&)(*me) == DBG_WORD )
-                {
-                    return;
-                }
-
-                visitor(me, my_adress);
-
-                if (myDepth == lastDepth)   // last node has no childs
-                    return;
-
-                SpaceDivision::IntersectionResult res = me->intersection(p);
-
-                const Node * child_table = my_table + NodesPerLevelAmount(myDepth);
-                uint32 child_depth = myDepth + 1;
-                uint32 child_adress = my_adress * 4;
-
-                if ((res & SpaceDivision::LeftUpper) == SpaceDivision::LeftUpper)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
-                if ((res & SpaceDivision::RightUpper) == SpaceDivision::RightUpper)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
-                if ((res & SpaceDivision::LeftLower) == SpaceDivision::LeftLower)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
-                if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
-                    Visit(child_table, p, visitor, lastDepth, child_depth, child_adress++);
-            }
-        };
-
-        TT::Visit(nodes, p, visitor, m_depth, 0, 0);
-    }
+    template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const;
 
     Node * nodes;
     uint32 m_depth;
 };
+
+enum ChildOffset{
+    LeftUpper,
+    RightUpper,
+    LeftLower,
+    RightLower,
+};
+
+struct QuadIterator
+{
+    QuadTree::Node * my_table;
+    uint32 lastDepth;
+    uint32 myDepth;
+    uint32 my_adress;
+
+    static QuadIterator create(const QuadTree * tree)
+    {
+        QuadIterator it = {tree->nodes, tree->m_depth, 0, 0};
+        return it;
+    }
+
+    bool moveNext()
+    {
+        if (myDepth == lastDepth)
+            return false;
+
+        my_table += QuadTree::NodesPerLevelAmount(myDepth);
+        ++myDepth;
+        my_adress *= 4;
+        return true;
+    }
+
+    QuadIterator nearby(ChildOffset offset) const
+    {
+        QuadIterator it = *this;
+        it.my_adress += offset;
+        return it;
+    }
+
+    QuadTree::Node* current() const { return my_table + my_adress;}
+};
+
+template<class T> void QuadTree::intersectRecursive(const AABox2d& p, T& visitor) const
+{
+    struct TT {
+        static void Visit(QuadIterator it, const AABox2d& p, T& visitor)
+        {
+            const Node * me = it.current();
+
+            if ( (uint32&)(*me) == DBG_WORD )
+            {
+                return;
+            }
+
+            visitor(me, it.my_adress);
+
+            if (!it.moveNext())   // last node has no childs
+                return;
+
+            SpaceDivision::IntersectionResult res = me->intersection(p);
+
+            if ((res & SpaceDivision::LeftUpper) == SpaceDivision::LeftUpper)
+                Visit(it.nearby(LeftUpper), p, visitor);
+            if ((res & SpaceDivision::RightUpper) == SpaceDivision::RightUpper)
+                Visit(it.nearby(RightUpper), p, visitor);
+            if ((res & SpaceDivision::LeftLower) == SpaceDivision::LeftLower)
+                Visit(it.nearby(LeftLower), p, visitor);
+            if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
+                Visit(it.nearby(RightLower), p, visitor);
+        }
+    };
+
+    TT::Visit(QuadIterator::create(this), p, visitor);
+}
+
+void QuadTree::initNodes(const Point& center, uint32 sideSize)
+{
+    struct TT  {
+        static void Visit(QuadIterator it, Point myCenter, uint32 mySideSize)
+        {
+            Node * me = it.current();
+
+            if ( (uint32&)(*me) != DBG_WORD )
+            {
+                return;
+            }
+
+            me->xDiv = myCenter.x;
+            me->yDiv = myCenter.y;
+
+            if (!it.moveNext())   // last node has no childs
+                return;
+
+            Point child_center(myCenter);
+            uint32 child_SideSize = mySideSize / 2;
+            uint32 offset = mySideSize / 4;
+
+            child_center.x -= offset;
+            child_center.y += offset;
+            Visit(it.nearby(LeftUpper), child_center, child_SideSize); // LeftUpper
+
+            child_center = myCenter;
+            child_center.x += offset;
+            child_center.y += offset;
+            Visit(it.nearby(RightUpper), child_center, child_SideSize); // RightUpper
+
+            child_center = myCenter;
+            child_center.x -= offset;
+            child_center.y -= offset;
+            Visit(it.nearby(LeftLower), child_center, child_SideSize); // LeftLower
+
+            child_center = myCenter;
+            child_center.x += offset;
+            child_center.y -= offset;
+            Visit(it.nearby(RightLower), child_center, child_SideSize); // RightLower
+        }
+    };
+    memset(nodes, DBG_WORD, NodesAmount(m_depth) * sizeof Node);
+    TT::Visit(QuadIterator::create(this), center, sideSize);
+}
