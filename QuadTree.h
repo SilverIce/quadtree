@@ -134,10 +134,9 @@ public:
         DBG_WORD = 0,
     };
 
-    explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : m_depth(Depth), nodes(0)
+    explicit QuadTree(uint8 Depth, const Point& center, uint32 sideSize) : m_depth(Depth), nodes(0)
     {
-        uint32 nodesCount = NodesAmount(m_depth);
-        nodes = new Node[nodesCount];
+        nodes = new Node[NodesAmount(m_depth)];
         initNodes(center, sideSize);
     }
 
@@ -178,7 +177,7 @@ public:
     struct QuadIterator deepestContaining(const AABox2d& p) const;
 
     Node * nodes;
-    uint32 m_depth;
+    uint8 m_depth;
 };
 
 enum ChildOffset{
@@ -191,13 +190,13 @@ enum ChildOffset{
 struct QuadIterator
 {
     QuadTree::Node * my_table;
-    uint32 lastDepth;
-    uint32 myDepth;
     uint32 my_adress;
+    uint8 myDepth;
+    uint8 lastDepth;
 
     static QuadIterator create(const QuadTree * tree)
     {
-        QuadIterator it = {tree->nodes, tree->m_depth, 0, 0};
+        QuadIterator it = {tree->nodes, (uin32)0, (uint8)0, tree->m_depth};
         return it;
     }
 
@@ -308,7 +307,7 @@ QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
 {
     QuadIterator it(QuadIterator::create(this));
 
-    while(true)
+    for(;;)
     {
         Node * me = it.current();
 
