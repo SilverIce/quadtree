@@ -129,25 +129,27 @@ public:
         return (1 << depth);
     }
 
-
-    struct Node
+    typedef SpaceDivision Node;
+    /*struct Node
     {
         SpaceDivision div;
        // uint32 nodeId;
-    };
+    };*/
 
     enum{
-        DBG_WORD = uint32(-1),
+        DBG_WORD = 0,
     };
 
-    explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : depth(Depth), nodes(0)
+    explicit QuadTree(uint32 Depth, const Point& center, uint32 sideSize) : m_depth(Depth), nodes(0)
     {
-        uint32 nodesCount = NodesAmount(depth);
+        uint32 nodesCount = NodesAmount(m_depth);
         nodes = new Node[nodesCount];
         initNodes(center, sideSize);
     }
 
     ~QuadTree() { delete[] nodes;}
+
+    void debugSelf();
 
     void initNodes(const Point& center, uint32 sideSize)
     {
@@ -162,8 +164,8 @@ public:
                     return;
                 }
 
-                me->div.xDiv = myCenter.x;
-                me->div.yDiv = myCenter.y;
+                me->xDiv = myCenter.x;
+                me->yDiv = myCenter.y;
 
                 if (myDepth == lastDepth)   // last node has no childs
                     return;
@@ -196,8 +198,8 @@ public:
                 Visit(child_table, child_center, child_SideSize, lastDepth, child_depth, child_adress++); // RightLower
             }
         };
-        memset(nodes, DBG_WORD, NodesAmount(depth) * sizeof Node);
-        TT::Visit(nodes, center, sideSize, depth, 0, 0);
+        memset(nodes, DBG_WORD, NodesAmount(m_depth) * sizeof Node);
+        TT::Visit(nodes, center, sideSize, m_depth, 0, 0);
     }
 
     // Not recursive. Hard to implement
@@ -243,7 +245,7 @@ public:
                 if (myDepth == lastDepth)   // last node has no childs
                     return;
 
-                SpaceDivision::IntersectionResult res = me->div.intersection(p);
+                SpaceDivision::IntersectionResult res = me->intersection(p);
 
                 const Node * child_table = my_table + NodesPerLevelAmount(myDepth);
                 uint32 child_depth = myDepth + 1;
@@ -260,9 +262,9 @@ public:
             }
         };
 
-        TT::Visit(nodes, p, visitor, depth, 0, 0);
+        TT::Visit(nodes, p, visitor, m_depth, 0, 0);
     }
 
     Node * nodes;
-    uint32 depth;
+    uint32 m_depth;
 };
