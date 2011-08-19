@@ -109,25 +109,26 @@ struct SpaceDivision
 
 class QuadTree
 {
-    // calculates total amount of nodes for given tree depth
+public:
+
+   // calculates total amount of nodes for given tree depth
     static uint32 NodesAmount(uint32 depth)
     {
-        return ((2 << (2*depth+2)) - 1) / 3;
+        return ((1 << (2*depth+2)) - 1) / 3;
     }
 
     // calculates amount of nodes for given level(depth)
     static uint32 NodesPerLevelAmount(uint32 depth)
     {
-        return (2 << (2*depth));
+        return (1 << (2*depth));
     }
 
     // calculates amount of nodes for level(depth)
     static uint32 NodesSidePerLevelAmount(uint32 depth)
     {
-        return (2 << depth);
+        return (1 << depth);
     }
 
-public:
 
     struct Node
     {
@@ -227,8 +228,7 @@ public:
 
     template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const
     {
-        struct TT 
-        {
+        struct TT {
             static void Visit(const Node * my_table, const AABox2d& p, T& visitor, uint32 lastDepth, uint32 myDepth, uint32 my_adress)
             {
                 const Node * me = my_table + my_adress;
