@@ -184,31 +184,7 @@ public:
 
     void initNodes(const Point& center, uint32 sideSize);
 
-    // Not recursive. Hard to implement
-    void intersect(const AABox2d& /*p*/) const
-    {
-        /*uint32 I = 1;
-        uint32 stack[0x100];
-        uint32 stackItr = 0;
-
-        {
-            uint32 levelSize = NodesPerLevelAmount(I);
-            Node * node = nodes + I;
-            SpaceDivision::IntersectionResult res = node->div.intersection(p);
-
-
-            if ((res & SpaceDivision::LeftUpper) == SpaceDivision::LeftUpper)
-                stack[stackItr++] = ++I;
-            if ((res & SpaceDivision::RightUpper) == SpaceDivision::RightUpper)
-                stack[stackItr++] = ++I;
-            if ((res & SpaceDivision::LeftLower) == SpaceDivision::LeftLower)
-                stack[stackItr++] = ++I;
-            if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
-                stack[stackItr++] = ++I;
-
-            ++I;
-        }*/
-    }
+    template<class T> void intersect(const AABox2d& p, T& visitor) const;
 
     template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const;
 
@@ -246,6 +222,17 @@ struct QuadIterator
         my_table += QuadTree::NodesPerLevelAmount(myDepth);
         ++myDepth;
         my_adress *= 4;
+        return true;
+    }
+
+    bool movePrev()
+    {
+        if (myDepth == 0)
+            return false;
+
+        my_adress /= 4;
+        --myDepth;
+        my_table -= QuadTree::NodesPerLevelAmount(myDepth);
         return true;
     }
 
@@ -375,4 +362,94 @@ QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
         }
     }
     return it;
+}
+
+template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
+{
+    enum{
+        StackLast = 30,
+    };
+
+    QuadIterator it(QuadIterator::create(this));
+    uint8 stackArray[StackLast+1];
+    uint8 * stack = stackArray;
+    uint8 * stackBottom = stackArray;
+    *stackBottom = 0;
+
+    for(;;)
+    {
+        const Node * me = it.current();
+
+        if ( (uint32&)(*me) == DBG_WORD )
+            return;
+
+        visitor(me, it.my_adress);
+
+        if (it.moveNext())
+        {
+            uint8 res = (uint8)me->intersectionQuadrants(p);
+            if (res & SpaceDivision::NorthWest){
+                res &= ~SpaceDivision::NorthWest;
+                //it.moveTo(LeftUpper);
+                it.my_adress;
+            }
+            else if (res & SpaceDivision::NorthEast){
+                res &= ~SpaceDivision::NorthEast;
+                //it.moveTo(RightUpper);
+                ++it.my_adress;
+            }
+            else if (res & SpaceDivision::SouthWest){
+                res &= ~SpaceDivision::SouthWest;
+                //it.moveTo(LeftLower);
+                ++it.my_adress;
+            }
+            else if (res & SpaceDivision::SouthEast){
+                res &= ~SpaceDivision::SouthEast;
+                //it.moveTo(RightLower);
+                ++it.my_adress;
+            }
+
+            if ((stack - stackBottom) == StackLast)
+                return; // overflow
+
+            *(++stack) = res;
+        }
+        else
+        {
+            for(;;)
+            {
+                if (stack == stackBottom)
+                    return;
+
+                if (*stack)
+                    break;
+
+                --stack;
+                it.movePrev();
+            }
+
+            uint8& res = *stack;
+
+            if (res & SpaceDivision::NorthWest){
+                res &= ~SpaceDivision::NorthWest;
+                //it.moveTo(LeftUpper);
+                it.my_adress;
+            }
+            else if (res & SpaceDivision::NorthEast){
+                res &= ~SpaceDivision::NorthEast;
+                //it.moveTo(RightUpper);
+                ++it.my_adress;
+            }
+            else if (res & SpaceDivision::SouthWest){
+                res &= ~SpaceDivision::SouthWest;
+                //it.moveTo(LeftLower);
+                ++it.my_adress;
+            }
+            else if (res & SpaceDivision::SouthEast){
+                res &= ~SpaceDivision::SouthEast;
+                //it.moveTo(RightLower);
+                ++it.my_adress;
+            }
+        }
+    }
 }

@@ -57,6 +57,7 @@ int main()
     Circle c = {MAP_SIZE/2, MAP_SIZE/2, 600};
     TreeVisitor visitor = {&tree};
     tree.intersectRecursive(AABox2d::create(c), visitor);
+    tree.intersect(AABox2d::create(c), visitor);
 
     QuadIterator it = tree.deepestContaining(AABox2d::create(c));
 
