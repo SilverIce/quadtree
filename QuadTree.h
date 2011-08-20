@@ -68,10 +68,17 @@ struct SpaceDivision
         Lower       = 0x4,
         Upper       = 0x8,
 
-        LeftUpper   = Left|Upper,
-        RightUpper  = Right|Upper,
-        LeftLower   = Left|Lower,
-        RightLower  = Right|Lower,
+        LeftUpper   = Left|Upper,   // 9
+        RightUpper  = Right|Upper,  // 10
+        LeftLower   = Left|Lower,   // 5
+        RightLower  = Right|Lower,  // 6
+    };
+
+    enum Quadrants{
+        NorthEast   = 0x1,
+        SouthEast   = 0x2,
+        SouthWest   = 0x4,
+        NorthWest   = 0x8,
     };
 
     /*IntersectionResult intersection(const Point& p) const
@@ -104,6 +111,37 @@ struct SpaceDivision
         else
             result |= (Lower|Upper);
         return (IntersectionResult)result;
+    }
+
+    Quadrants intersectionQuadrants(const AABox2d& p) const
+    {
+        if (xDiv < p.lo.x) //right
+        {
+            if (yDiv < p.lo.y)
+                return NorthEast;
+            else if (yDiv > p.hi.y)
+                return SouthEast;
+            else
+                return (Quadrants)(NorthEast|SouthEast);
+        }
+        else if (xDiv > p.hi.x) // left
+        {
+            if (yDiv < p.lo.y)
+                return NorthWest;
+            else if (yDiv > p.hi.y)
+                return SouthWest;
+            else
+                return (Quadrants)(NorthWest|SouthWest);
+        }
+        else //right | left
+        {
+            if (yDiv < p.lo.y)
+                return (Quadrants)(NorthEast|NorthWest);
+            else if (yDiv > p.hi.y)
+                return (Quadrants)(SouthEast|SouthWest);
+            else
+                return (Quadrants)(SouthEast|SouthWest | NorthEast|NorthWest);
+        }
     }
 };
 
@@ -196,7 +234,7 @@ struct QuadIterator
 
     static QuadIterator create(const QuadTree * tree)
     {
-        QuadIterator it = {tree->nodes, (uin32)0, (uint8)0, tree->m_depth};
+        QuadIterator it = {tree->nodes, (uint32)0, (uint8)0, tree->m_depth};
         return it;
     }
 

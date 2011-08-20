@@ -33,9 +33,20 @@ void QuadTree::debugSelf()
     std::vector<QuadTree::Node> array(this->nodes, end);
 }
 
+void testDivision()
+{
+    SpaceDivision div = {100, 100};
+
+    Circle c = {99, 99, 2};
+    AABox2d box = AABox2d::create(c);
+
+    check( div.intersectionQuadrants(box) == div.intersection(box));
+}
 
 int main()
 {
+    testDivision();
+
     uint32 MAP_SIZE = uint32(64.f * 533.333f);
 
     Point center = {MAP_SIZE/2, MAP_SIZE/2};
