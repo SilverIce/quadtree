@@ -68,10 +68,10 @@ struct SpaceDivision
         Lower       = 0x4,
         Upper       = 0x8,
 
-        LeftUpper   = Left|Upper,   // 9
-        RightUpper  = Right|Upper,  // 10
-        LeftLower   = Left|Lower,   // 5
-        RightLower  = Right|Lower,  // 6
+        Mask_LeftUpper   = Left|Upper,   // 9
+        Mask_RightUpper  = Right|Upper,  // 10
+        Mask_LeftLower   = Left|Lower,   // 5
+        Mask_RightLower  = Right|Lower,  // 6
     };
 
     enum Quadrants{
@@ -270,13 +270,13 @@ template<class T> void QuadTree::intersectRecursive(const AABox2d& p, T& visitor
 
             SpaceDivision::IntersectionResult res = me->intersection(p);
 
-            if ((res & SpaceDivision::LeftUpper) == SpaceDivision::LeftUpper)
+            if ((res & SpaceDivision::Mask_LeftUpper) == SpaceDivision::Mask_LeftUpper)
                 Visit(it.nearby(LeftUpper), p, visitor);
-            if ((res & SpaceDivision::RightUpper) == SpaceDivision::RightUpper)
+            if ((res & SpaceDivision::Mask_RightUpper) == SpaceDivision::Mask_RightUpper)
                 Visit(it.nearby(RightUpper), p, visitor);
-            if ((res & SpaceDivision::LeftLower) == SpaceDivision::LeftLower)
+            if ((res & SpaceDivision::Mask_LeftLower) == SpaceDivision::Mask_LeftLower)
                 Visit(it.nearby(LeftLower), p, visitor);
-            if ((res & SpaceDivision::RightLower) == SpaceDivision::RightLower)
+            if ((res & SpaceDivision::Mask_RightLower) == SpaceDivision::Mask_RightLower)
                 Visit(it.nearby(RightLower), p, visitor);
         }
     };
@@ -345,16 +345,16 @@ QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
         SpaceDivision::IntersectionResult res = me->intersection(p);
         switch (res)
         {
-        case SpaceDivision::LeftUpper:
+        case SpaceDivision::Mask_LeftUpper:
             it.moveTo(LeftUpper);
             continue;
-        case SpaceDivision::RightUpper:
+        case SpaceDivision::Mask_RightUpper:
             it.moveTo(RightUpper);
             continue;
-        case SpaceDivision::LeftLower:
+        case SpaceDivision::Mask_LeftLower:
             it.moveTo(LeftLower);
             continue;
-        case SpaceDivision::RightLower:
+        case SpaceDivision::Mask_RightLower:
             it.moveTo(RightLower);
             continue;
         default:
