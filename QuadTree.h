@@ -56,6 +56,20 @@ struct AABox2d
     }
 };
 
+enum ChildOffset{
+    LeftUpper  = 0,
+    RightUpper = 1,
+    LeftLower  = 2,
+    RightLower = 3,
+};
+
+enum QuadrantFlags{
+    NorthWest  = 1 << LeftUpper,
+    NorthEast  = 1 << RightUpper,
+    SouthWest  = 1 << LeftLower,
+    SouthEast  = 1 << RightLower,
+};
+
 // divides space into four subspaces
 struct SpaceDivision 
 {
@@ -72,13 +86,6 @@ struct SpaceDivision
         Mask_RightUpper  = Right|Upper,  // 10
         Mask_LeftLower   = Left|Lower,   // 5
         Mask_RightLower  = Right|Lower,  // 6
-    };
-
-    enum Quadrants{
-        NorthEast   = 0x1,
-        SouthEast   = 0x2,
-        SouthWest   = 0x4,
-        NorthWest   = 0x8,
     };
 
     /*IntersectionResult intersection(const Point& p) const
@@ -113,7 +120,7 @@ struct SpaceDivision
         return (IntersectionResult)result;
     }
 
-    Quadrants intersectionQuadrants(const AABox2d& p) const
+    QuadrantFlags intersectionQuadrants(const AABox2d& p) const
     {
         if (xDiv < p.lo.x) //right
         {
@@ -122,7 +129,7 @@ struct SpaceDivision
             else if (yDiv > p.hi.y)
                 return SouthEast;
             else
-                return (Quadrants)(NorthEast|SouthEast);
+                return (QuadrantFlags)(NorthEast|SouthEast);
         }
         else if (xDiv > p.hi.x) // left
         {
@@ -131,16 +138,16 @@ struct SpaceDivision
             else if (yDiv > p.hi.y)
                 return SouthWest;
             else
-                return (Quadrants)(NorthWest|SouthWest);
+                return (QuadrantFlags)(NorthWest|SouthWest);
         }
         else //right | left
         {
             if (yDiv < p.lo.y)
-                return (Quadrants)(NorthEast|NorthWest);
+                return (QuadrantFlags)(NorthEast|NorthWest);
             else if (yDiv > p.hi.y)
-                return (Quadrants)(SouthEast|SouthWest);
+                return (QuadrantFlags)(SouthEast|SouthWest);
             else
-                return (Quadrants)(SouthEast|SouthWest | NorthEast|NorthWest);
+                return (QuadrantFlags)(SouthEast|SouthWest | NorthEast|NorthWest);
         }
     }
 };
@@ -192,13 +199,6 @@ public:
 
     Node * nodes;
     uint8 m_depth;
-};
-
-enum ChildOffset{
-    LeftUpper,
-    RightUpper,
-    LeftLower,
-    RightLower,
 };
 
 struct QuadIterator
@@ -393,20 +393,20 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
         if (it.moveNext())
         {
             uint8 res = (uint8)me->intersectionQuadrants(p);
-            if (res & SpaceDivision::NorthWest){
-                res &= ~SpaceDivision::NorthWest;
+            if (res & NorthWest){
+                res &= ~NorthWest;
                 it.moveTo(LeftUpper);
             }
-            else if (res & SpaceDivision::NorthEast){
-                res &= ~SpaceDivision::NorthEast;
+            else if (res & NorthEast){
+                res &= ~NorthEast;
                 it.moveTo(RightUpper);
             }
-            else if (res & SpaceDivision::SouthWest){
-                res &= ~SpaceDivision::SouthWest;
+            else if (res & SouthWest){
+                res &= ~SouthWest;
                 it.moveTo(LeftLower);
             }
-            else if (res & SpaceDivision::SouthEast){
-                res &= ~SpaceDivision::SouthEast;
+            else if (res & SouthEast){
+                res &= ~SouthEast;
                 it.moveTo(RightLower);
             }
 
@@ -431,20 +431,20 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
 
             uint8& res = *stack;
 
-            if (res & SpaceDivision::NorthWest){
-                res &= ~SpaceDivision::NorthWest;
+            if (res & NorthWest){
+                res &= ~NorthWest;
                 it.moveTo(LeftUpper);
             }
-            else if (res & SpaceDivision::NorthEast){
-                res &= ~SpaceDivision::NorthEast;
+            else if (res & NorthEast){
+                res &= ~NorthEast;
                 it.moveTo(RightUpper);
             }
-            else if (res & SpaceDivision::SouthWest){
-                res &= ~SpaceDivision::SouthWest;
+            else if (res & SouthWest){
+                res &= ~SouthWest;
                 it.moveTo(LeftLower);
             }
-            else if (res & SpaceDivision::SouthEast){
-                res &= ~SpaceDivision::SouthEast;
+            else if (res & SouthEast){
+                res &= ~SouthEast;
                 it.moveTo(RightLower);
             }
         }
