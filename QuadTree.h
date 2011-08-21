@@ -236,16 +236,21 @@ struct QuadIterator
         return true;
     }
 
-    QuadIterator nearby(ChildOffset offset) const
+    QuadIterator nearby(ChildOffset offset_) const
     {
         QuadIterator it = *this;
-        it.my_adress += offset;
+        it.moveTo(offset_);
         return it;
     }
 
-    void moveTo(ChildOffset offset)
+    void moveTo(ChildOffset offset_)
     {
-        my_adress = my_adress/4*4 + offset;
+        my_adress = my_adress/4*4 + offset_;
+    }
+
+    ChildOffset offset() const
+    {
+        return (ChildOffset)(my_adress % 4);
     }
 
     QuadTree::Node* current() const { return my_table + my_adress;}
