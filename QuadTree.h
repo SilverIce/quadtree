@@ -245,7 +245,7 @@ struct QuadIterator
 
     void moveTo(ChildOffset offset)
     {
-        my_adress += offset;
+        my_adress = my_adress/4*4 + offset;
     }
 
     QuadTree::Node* current() const { return my_table + my_adress;}
@@ -390,23 +390,19 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
             uint8 res = (uint8)me->intersectionQuadrants(p);
             if (res & SpaceDivision::NorthWest){
                 res &= ~SpaceDivision::NorthWest;
-                //it.moveTo(LeftUpper);
-                it.my_adress;
+                it.moveTo(LeftUpper);
             }
             else if (res & SpaceDivision::NorthEast){
                 res &= ~SpaceDivision::NorthEast;
-                //it.moveTo(RightUpper);
-                ++it.my_adress;
+                it.moveTo(RightUpper);
             }
             else if (res & SpaceDivision::SouthWest){
                 res &= ~SpaceDivision::SouthWest;
-                //it.moveTo(LeftLower);
-                ++it.my_adress;
+                it.moveTo(LeftLower);
             }
             else if (res & SpaceDivision::SouthEast){
                 res &= ~SpaceDivision::SouthEast;
-                //it.moveTo(RightLower);
-                ++it.my_adress;
+                it.moveTo(RightLower);
             }
 
             if ((stack - stackBottom) == StackLast)
@@ -432,23 +428,19 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
 
             if (res & SpaceDivision::NorthWest){
                 res &= ~SpaceDivision::NorthWest;
-                //it.moveTo(LeftUpper);
-                it.my_adress;
+                it.moveTo(LeftUpper);
             }
             else if (res & SpaceDivision::NorthEast){
                 res &= ~SpaceDivision::NorthEast;
-                //it.moveTo(RightUpper);
-                ++it.my_adress;
+                it.moveTo(RightUpper);
             }
             else if (res & SpaceDivision::SouthWest){
                 res &= ~SpaceDivision::SouthWest;
-                //it.moveTo(LeftLower);
-                ++it.my_adress;
+                it.moveTo(LeftLower);
             }
             else if (res & SpaceDivision::SouthEast){
                 res &= ~SpaceDivision::SouthEast;
-                //it.moveTo(RightLower);
-                ++it.my_adress;
+                it.moveTo(RightLower);
             }
         }
     }
