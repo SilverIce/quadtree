@@ -43,6 +43,21 @@ void testDivision()
     check( div.intersectionQuadrants(box) == div.intersection(box));
 }
 
+class Timer
+{
+public:
+    typedef unsigned __int64 rt_time;
+    explicit Timer() { reset();}
+    rt_time passed() const { return now() - start;}
+    void reset() { start = now();}
+private:
+    static rt_time now()
+    {
+        __asm rdtsc;
+    }
+    rt_time start;
+};
+
 int main()
 {
     testDivision();
