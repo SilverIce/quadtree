@@ -2,7 +2,7 @@
 #include <memory.h>
 
 typedef unsigned int uint32;
-typedef unsigned long uint64;
+typedef unsigned long long uint64;
 typedef unsigned char uint8;
 
 /*
@@ -156,46 +156,55 @@ class QuadTree
 {
 public:
 
-   // calculates total amount of nodes for given tree depth
-    static uint32 NodesAmount(uint32 depth)
+    // calculates total amount of nodes for given tree depth
+    static uint64 NodesAmount(uint8 depth)
     {
-        return ((1 << (2*depth+2)) - 1) / 3;
+        return ((uint64(1) << (2*depth+2)) - 1) / 3;
     }
 
     // calculates amount of nodes for given level(depth)
-    static uint32 NodesPerLevelAmount(uint32 depth)
+    static uint64 NodesPerLevelAmount(uint8 depth)
     {
-        return (1 << (2*depth));
+        return (uint64(1) << (2*depth));
     }
 
     typedef SpaceDivision Node;
-    /*struct Node
-    {
-        SpaceDivision div;
-       // uint32 nodeId;
-    };*/
 
     enum{
         DBG_WORD = 0,
+        //MaxUInt32Depth = 14,
+        //MaxUInt64Depth = 30,
     };
 
-    explicit QuadTree(uint8 Depth, const Point& center, uint32 sideSize) : m_depth(Depth), nodes(0)
+    static QuadTree* create(uint8 Depth, const Point& center, uint32 sideSize)
     {
-        nodes = new Node[NodesAmount(m_depth)];
-        initNodes(center, sideSize);
+        uint64 nodesAmount = NodesAmount(Depth);
+        if (nodesAmount > ((uint64(1) << 32) - 1))  // nodes amount is greater than maximum unsigned 32-bit value
+            return 0;
+
+        QuadTree * tree = new QuadTree();
+        tree->m_depth = Depth;
+        tree->nodes = new Node[(uint32)nodesAmount];
+        tree->initNodes(center, sideSize, (uint32)nodesAmount);
+        return tree;
     }
 
     ~QuadTree() { delete[] nodes;}
 
-    void debugSelf();
+    Node * Nodes() const { return nodes;}
+    uint8 Depth() const { return m_depth;}
 
-    void initNodes(const Point& center, uint32 sideSize);
+    void debugSelf();
 
     template<class T> void intersect(const AABox2d& p, T& visitor) const;
 
     template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const;
 
     struct QuadIterator deepestContaining(const AABox2d& p) const;
+
+private:
+    explicit QuadTree() {}
+    void initNodes(const Point& center, uint32 sideSize, uint32 nodesAmount);
 
     Node * nodes;
     uint8 m_depth;
@@ -210,7 +219,7 @@ struct QuadIterator
 
     static QuadIterator create(const QuadTree * tree)
     {
-        QuadIterator it = {tree->nodes, (uint32)0, (uint8)0, tree->m_depth};
+        QuadIterator it = {tree->Nodes(), (uint32)0, (uint8)0, tree->Depth()};
         return it;
     }
 
@@ -289,7 +298,7 @@ template<class T> void QuadTree::intersectRecursive(const AABox2d& p, T& visitor
     TT::Visit(QuadIterator::create(this), p, visitor);
 }
 
-void QuadTree::initNodes(const Point& center, uint32 sideSize)
+void QuadTree::initNodes(const Point& center, uint32 sideSize, uint32 nodesAmount)
 {
     struct TT  {
         static void Visit(QuadIterator it, Point myCenter, uint32 mySideSize)
@@ -329,7 +338,7 @@ void QuadTree::initNodes(const Point& center, uint32 sideSize)
             Visit(it.nearby(RightLower), child_center, child_SideSize); // RightLower
         }
     };
-    memset(nodes, DBG_WORD, NodesAmount(m_depth) * sizeof Node);
+    memset(nodes, DBG_WORD, nodesAmount * sizeof Node);
     TT::Visit(QuadIterator::create(this), center, sideSize);
 }
 
