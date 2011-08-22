@@ -5,30 +5,6 @@ typedef unsigned int uint32;
 typedef unsigned long long uint64;
 typedef unsigned char uint8;
 
-/*
-    Симметричное quad-tree. Благодаря симметричности рассчитать адрес точки очень легко.
-    Ветви такого дерева располагаются/должны располагаться в одном куске памяти
-
-    value >> N bits
-
-
-*/
-
-// Class-adress
-class QuadAdress
-{
-    uint32 x;
-    uint32 y;
-    uint32 depth;   //really needed?
-
-    explicit QuadAdress(uint32 X, uint32 Y, uint32 Depth) : x(X), y(Y), depth(Depth) {}
-
-    // returns adress of parent cell
-    QuadAdress base() const
-    {
-        return QuadAdress(x/2, y/2, depth-1);
-    }  
-};
 
 struct Point
 {
@@ -273,24 +249,22 @@ template<class T> void QuadTree::intersectRecursive(const AABox2d& p, T& visitor
             const Node * me = it.current();
 
             if ( (uint32&)(*me) == DBG_WORD )
-            {
-                return;
-            }
-
-            visitor(me, it.my_adress);
-
-            if (!it.moveNext())   // last node has no childs
                 return;
 
-            SpaceDivision::IntersectionResult res = me->intersection(p);
+            visitor(it);
 
-            if ((res & SpaceDivision::Mask_LeftUpper) == SpaceDivision::Mask_LeftUpper)
+            if (!it.moveNext())   // last node has no childs, no sense test for intersection
+                return;
+
+            QuadrantFlags res = me->intersectionQuadrants(p);
+
+            if (res & (1 << LeftUpper))
                 Visit(it.nearby(LeftUpper), p, visitor);
-            if ((res & SpaceDivision::Mask_RightUpper) == SpaceDivision::Mask_RightUpper)
+            if (res & (1 << RightUpper))
                 Visit(it.nearby(RightUpper), p, visitor);
-            if ((res & SpaceDivision::Mask_LeftLower) == SpaceDivision::Mask_LeftLower)
+            if (res & (1 << LeftLower))
                 Visit(it.nearby(LeftLower), p, visitor);
-            if ((res & SpaceDivision::Mask_RightLower) == SpaceDivision::Mask_RightLower)
+            if (res & (1 << RightLower))
                 Visit(it.nearby(RightLower), p, visitor);
         }
     };
@@ -387,48 +361,27 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
     QuadIterator it(QuadIterator::create(this));
     uint8 stackArray[StackLast+1];
     uint8 * stack = stackArray;
-    uint8 * stackBottom = stackArray;
-    *stackBottom = 0;
 
     for(;;)
     {
         const Node * me = it.current();
-
         if ( (uint32&)(*me) == DBG_WORD )
             return;
 
-        visitor(me, it.my_adress);
+        visitor(it);
 
         if (it.moveNext())
         {
-            uint8 res = (uint8)me->intersectionQuadrants(p);
-            if (res & NorthWest){
-                res &= ~NorthWest;
-                it.moveTo(LeftUpper);
-            }
-            else if (res & NorthEast){
-                res &= ~NorthEast;
-                it.moveTo(RightUpper);
-            }
-            else if (res & SouthWest){
-                res &= ~SouthWest;
-                it.moveTo(LeftLower);
-            }
-            else if (res & SouthEast){
-                res &= ~SouthEast;
-                it.moveTo(RightLower);
-            }
-
-            if ((stack - stackBottom) == StackLast)
+            if ((stack - stackArray) == StackLast)
                 return; // overflow
 
-            *(++stack) = res;
+            *(++stack) = (uint8)me->intersectionQuadrants(p);
         }
         else
         {
             for(;;)
             {
-                if (stack == stackBottom)
+                if (stack == stackArray)
                     return;
 
                 if (*stack)
@@ -437,25 +390,34 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
                 --stack;
                 it.movePrev();
             }
-
-            uint8& res = *stack;
-
-            if (res & NorthWest){
-                res &= ~NorthWest;
-                it.moveTo(LeftUpper);
-            }
-            else if (res & NorthEast){
-                res &= ~NorthEast;
-                it.moveTo(RightUpper);
-            }
-            else if (res & SouthWest){
-                res &= ~SouthWest;
-                it.moveTo(LeftLower);
-            }
-            else if (res & SouthEast){
-                res &= ~SouthEast;
-                it.moveTo(RightLower);
-            }
         }
+
+        uint8& res = *stack;
+        // couple of 'if' statements are faster than commented code below
+        if (res & NorthWest){
+            res &= ~NorthWest;
+            it.moveTo(LeftUpper);
+        }
+        else if (res & NorthEast){
+            res &= ~NorthEast;
+            it.moveTo(RightUpper);
+        }
+        else if (res & SouthWest){
+            res &= ~SouthWest;
+            it.moveTo(LeftLower);
+        }
+        else if (res & SouthEast){
+            res &= ~SouthEast;
+            it.moveTo(RightLower);
+        }
+        /*for (uint8 i = 0; i < 4; ++i)
+        {
+            if (res & (1 << i))
+            {
+                res &= ~(1 << i);
+                it.moveTo((ChildOffset)i);
+                break;
+            }
+        }*/
     }
 }

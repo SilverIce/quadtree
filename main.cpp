@@ -8,15 +8,15 @@ struct TreeVisitor
 {
     QuadTree* tree;
 
-    void operator()(const QuadTree::Node * node, uint32 addr)
+    void operator()(const QuadIterator& it)
     {
-        printf("visiting adress: %u, absolute: %u\n", addr, uint32(node-tree->nodes));
+        printf("visiting adress: %u, absolute: %u\n", it.my_adress, uint32(it.current() - tree->Nodes()));
     }
 };
 
 #define check(expr)\
     if ((bool)(expr) == false)\
-        printf("exrpession " #expr " failed\n");
+        printf("expression " #expr " failed\n");
 
 void QuadTree::debugSelf()
 {
@@ -27,8 +27,6 @@ void QuadTree::debugSelf()
     Node * end = this->nodes + NodesAmount(this->m_depth);
     for (Node * i = this->nodes; i != end; ++i)
         check(i->xDiv != DBG_WORD);
-
-    check((end - this->nodes) == QuadTree::NodesAmount(this->m_depth));
 
     std::vector<QuadTree::Node> array(this->nodes, end);
 }
