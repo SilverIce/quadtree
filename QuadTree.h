@@ -5,16 +5,17 @@ typedef unsigned int uint32;
 typedef unsigned long long uint64;
 typedef unsigned char uint8;
 
+typedef uint32 length_type;
 
 struct Point
 {
-    uint32 x, y;
+    length_type x, y;
 };
 
 struct Circle
 {
     Point point;
-    uint32 radius;
+    length_type radius;
 };
 
 struct AABox2d
@@ -49,7 +50,7 @@ enum QuadrantFlags{
 // divides space into four subspaces
 struct SpaceDivision 
 {
-    uint32 xDiv, yDiv;
+    length_type xDiv, yDiv;
 
     enum IntersectionResult{
         None        = 0x0,
@@ -152,7 +153,7 @@ public:
         //MaxUInt64Depth = 30,
     };
 
-    static QuadTree* create(uint8 Depth, const Point& center, uint32 sideSize)
+    static QuadTree* create(uint8 Depth, const Point& center, length_type sideSize)
     {
         uint64 nodesAmount = NodesAmount(Depth);
         if (nodesAmount > ((uint64(1) << 32) - 1))  // nodes amount is greater than maximum unsigned 32-bit value
@@ -179,8 +180,10 @@ public:
     struct QuadIterator deepestContaining(const AABox2d& p) const;
 
 private:
-    explicit QuadTree() {}
-    void initNodes(const Point& center, uint32 sideSize, uint32 nodesAmount);
+    QuadTree() {}
+    QuadTree(const QuadTree&);
+    QuadTree& operator = (const QuadTree&);
+    void initNodes(const Point& center, length_type sideSize, uint32 nodesAmount);
 
     Node * nodes;
     uint8 m_depth;
@@ -272,10 +275,10 @@ template<class T> void QuadTree::intersectRecursive(const AABox2d& p, T& visitor
     TT::Visit(QuadIterator::create(this), p, visitor);
 }
 
-void QuadTree::initNodes(const Point& center, uint32 sideSize, uint32 nodesAmount)
+void QuadTree::initNodes(const Point& center, length_type sideSize, uint32 nodesAmount)
 {
     struct TT  {
-        static void Visit(QuadIterator it, Point myCenter, uint32 mySideSize)
+        static void Visit(QuadIterator it, Point myCenter, length_type mySideSize)
         {
             Node * me = it.current();
 
@@ -289,8 +292,8 @@ void QuadTree::initNodes(const Point& center, uint32 sideSize, uint32 nodesAmoun
                 return;
 
             Point child_center(myCenter);
-            uint32 child_SideSize = mySideSize / 2;
-            uint32 offset = mySideSize / 4;
+            length_type child_SideSize = mySideSize / 2;
+            length_type offset = mySideSize / 4;
 
             child_center.x -= offset;
             child_center.y += offset;
@@ -348,6 +351,8 @@ QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
         default:
             break;
         }
+        it.movePrev();
+        break;
     }
     return it;
 }

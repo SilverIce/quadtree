@@ -60,7 +60,7 @@ int main()
 {
     testDivision();
 
-    uint32 MAP_SIZE = uint32(64.f * 533.333f);
+    length_type MAP_SIZE = length_type(64.f * 533.333f);
 
     Point center = {MAP_SIZE/2, MAP_SIZE/2};
     QuadTree * tree = QuadTree::create(8, center, MAP_SIZE);
