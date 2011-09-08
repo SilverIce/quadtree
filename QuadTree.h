@@ -159,30 +159,43 @@ public:
         if (nodesAmount > ((uint64(1) << 32) - 1))  // nodes amount is greater than maximum unsigned 32-bit value
             return 0;
 
-        QuadTree * tree = new QuadTree();
-        tree->m_depth = Depth;
-        tree->nodes = new Node[(uint32)nodesAmount];
-        tree->initNodes(center, sideSize, (uint32)nodesAmount);
-        return tree;
+        return new QuadTree(Depth, center, sideSize);
     }
 
     ~QuadTree() { delete[] nodes;}
 
     Node * Nodes() const { return nodes;}
     uint8 Depth() const { return m_depth;}
+    uint32 NodesAmount() const { return (uint32)QuadTree::NodesAmount(Depth());}
 
     void debugSelf();
 
-    template<class T> void intersect(const AABox2d& p, T& visitor) const;
+    /* visits the nodes in 'wrong' order: one low depth level node first, then one his child and so on until it reach last depth level.
+     * moves back to prevous level and begans visiting nodes that weren't visited yet
+     */
+    template<class T> void Deprecate_intersect(const AABox2d& box, T& visitor) const;
+    /* visits the nodes in 'proper' order: all nodes from the low depth level first that box intersects,
+     * then their childs and so on */
+    template<class T> void intersect(const AABox2d& box, T& visitor) const;
 
-    template<class T> void intersectRecursive(const AABox2d& p, T& visitor) const;
+    template<class T> void intersectRecursive(const AABox2d& box, T& visitor) const;
 
-    struct QuadIterator deepestContaining(const AABox2d& p) const;
+    struct QuadIterator deepestContaining(const AABox2d& box) const;
+protected:
+
+    QuadTree(uint8 Depth, const Point& center, length_type sideSize)
+    {
+        uint64 nodesAmount = NodesAmount(Depth);
+        m_depth = Depth;
+        nodes = new Node[(uint32)nodesAmount];
+        initNodes(center, sideSize, (uint32)nodesAmount);
+    }
 
 private:
-    QuadTree() {}
+    QuadTree();
     QuadTree(const QuadTree&);
     QuadTree& operator = (const QuadTree&);
+
     void initNodes(const Point& center, length_type sideSize, uint32 nodesAmount);
 
     Node * nodes;

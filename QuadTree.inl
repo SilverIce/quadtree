@@ -112,7 +112,7 @@ QuadIterator QuadTree::deepestContaining(const AABox2d& p) const
     return it;
 }
 
-template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
+template<class T> void QuadTree::Deprecate_intersect(const AABox2d& p, T& visitor) const
 {
     enum{
         StackLast = 30,
@@ -182,3 +182,64 @@ template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
     }
 }
 
+template<class T> void QuadTree::intersect(const AABox2d& p, T& visitor) const
+{
+    enum{
+        StackLast = 30,
+    };
+    uint8 stackArray[StackLast+1];
+    uint8 * stack = stackArray;
+
+    QuadIterator it(QuadIterator::create(this));
+    visitor(it);
+
+    for(;;)
+    {
+        const Node * me = it.current();
+        if ( (uint32&)(*me) == DBG_WORD )
+            return;
+
+        if (it.moveNext())
+        {
+            if ((stack - stackArray) == StackLast)
+                return; // overflow
+
+            uint8 res = (uint8)me->intersectionQuadrants(p);
+            *(++stack) = res;
+
+            for (uint8 i = 0; i < 4; ++i)
+            {
+                if (res & (1 << i))
+                {
+                    it.moveTo((ChildOffset)i);
+                    visitor(it);
+                }
+            }
+        }
+        else
+        {
+            for(;;)
+            {
+                if (stack == stackArray)
+                    return;
+
+                if (*stack)
+                    break;
+
+                --stack;
+                it.movePrev();
+            }
+        }
+
+        uint8& res = *stack;
+        for (uint8 i = 0; i < 4; ++i)
+        {
+            if (res & (1 << i))
+            {
+                res &= ~(1 << i);
+                it.moveTo((ChildOffset)i);
+                break;
+            }
+        }
+    }
+}
